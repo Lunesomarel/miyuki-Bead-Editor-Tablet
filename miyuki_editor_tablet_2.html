@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#3b82f6">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-title" content="Miyuki Editor">
 <title>Miyuki Bead Editor</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+CiAgPCEtLSBCYWNrZ3JvdW5kIHJvdW5kZWQgc3F1YXJlIC0tPgogIDxyZWN0IHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgcng9IjciIGZpbGw9IiMxZDRlZDgiLz4KICA8IS0tIDN4MyBncmlkIG9mIGJlYWRzIGluIGxpbmUgc3R5bGUsIHdoaXRlIHN0cm9rZXMgLS0+CiAgPCEtLSBSb3cgMSAtLT4KICA8cmVjdCB4PSI0IiB5PSI0IiB3aWR0aD0iNyIgaGVpZ2h0PSI3IiByeD0iMiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIxLjUiLz4KICA8cmVjdCB4PSIxMi41IiB5PSI0IiB3aWR0aD0iNyIgaGVpZ2h0PSI3IiByeD0iMiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIxLjUiLz4KICA8cmVjdCB4PSIyMSIgeT0iNCIgd2lkdGg9IjciIGhlaWdodD0iNyIgcng9IjIiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41Ii8+CiAgPCEtLSBSb3cgMiAob2Zmc2V0IGZvciBicmljayBwYXR0ZXJuKSAtLT4KICA8cmVjdCB4PSI4IiB5PSIxMi41IiB3aWR0aD0iNyIgaGVpZ2h0PSI3IiByeD0iMiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIxLjUiLz4KICA8cmVjdCB4PSIxNi41IiB5PSIxMi41IiB3aWR0aD0iNyIgaGVpZ2h0PSI3IiByeD0iMiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIxLjUiLz4KICA8IS0tIFJvdyAzIC0tPgogIDxyZWN0IHg9IjQiIHk9IjIxIiB3aWR0aD0iNyIgaGVpZ2h0PSI3IiByeD0iMiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIxLjUiLz4KICA8cmVjdCB4PSIxMi41IiB5PSIyMSIgd2lkdGg9IjciIGhlaWdodD0iNyIgcng9IjIiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41Ii8+CiAgPHJlY3QgeD0iMjEiIHk9IjIxIiB3aWR0aD0iNyIgaGVpZ2h0PSI3IiByeD0iMiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIxLjUiLz4KPC9zdmc+">
@@ -2985,7 +2986,7 @@ function applyTool(cell,first){
   if(tool==='draw'){if(first)saveUndo();setCells(cells,selC.hex);}
   else if(tool==='erase'){if(first)saveUndo();setCells(cells,null);}
   else if(tool==='fill'&&first){saveUndo();cells.forEach(({c:fc,r:fr})=>{if(fc>=0&&fc<cols&&fr>=0&&fr<rows)flood(fc,fr,grid[fr][fc],selC.hex);});fullRenderAndCC();}
-  else if(tool==='pick'&&first&&grid[r][c]){const f=PAL.find(p=>p.hex===grid[r][c]);if(f)pickColor(f);}
+  else if(tool==='pick'&&first&&grid[r][c]){const _hex=grid[r][c];const f=PAL.find(p=>p.hex===_hex)||[...customColors].find(p=>p.hex===_hex)||{id:_hex,hex:_hex};pickColor(f);setTool('draw');}
   document.getElementById('sp').textContent=`Col ${c+1}, Fila ${r+1}`;
 }
 function flood(c,r,tgt,fill){
