@@ -250,12 +250,12 @@ kbd{display:inline-flex;align-items:center;justify-content:center;min-width:26px
   /* Panel toggle buttons — floating */
   #btn-lp-toggle, #btn-rp-toggle {
     position: fixed; z-index: 300;
-    width: 36px; height: 36px;
+    width: 40px; height: 40px;
     border-radius: 50%;
     border: none;
     background: var(--acc);
     color: #fff;
-    font-size: 18px;
+    font-size: 20px;
     display: flex; align-items: center; justify-content: center;
     box-shadow: 0 2px 8px rgba(0,0,0,.25);
     cursor: pointer;
@@ -321,8 +321,8 @@ kbd{display:inline-flex;align-items:center;justify-content:center;min-width:26px
 </div>
 
 <!-- Mobile panel toggles -->
-<button id="btn-lp-toggle" title="Paleta" style="display:none;">🎨</button>
-<button id="btn-rp-toggle" title="Opciones" style="display:none;">⚙️</button>
+<button id="btn-lp-toggle" title="Paleta" style="display:none;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="8" cy="14" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="8" r="1.5" fill="currentColor" stroke="none"/><circle cx="16" cy="14" r="1.5" fill="currentColor" stroke="none"/><circle cx="10" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg></button>
+<button id="btn-rp-toggle" title="Opciones" style="display:none;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="9" cy="6" r="2" fill="var(--panel)" stroke="currentColor"/><circle cx="15" cy="12" r="2" fill="var(--panel)" stroke="currentColor"/><circle cx="10" cy="18" r="2" fill="var(--panel)" stroke="currentColor"/></svg></button>
 <div id="panel-backdrop"></div>
 
 <div id="main">
@@ -357,7 +357,7 @@ kbd{display:inline-flex;align-items:center;justify-content:center;min-width:26px
  </div>
  </div>
  <div id="custom-grid"></div>
- <div class="custom-label">Clic derecho para eliminar</div>
+ <div class="custom-label">Mantén presionado para eliminar</div>
  </div>
  </div>
 
@@ -1445,17 +1445,56 @@ let customSymbols=JSON.parse(lsGet('miyuki_custom_symbols','{}'));
 function buildCustomGrid(){
   const g=document.getElementById('custom-grid');g.innerHTML='';
   customColors.forEach(p=>{
+    const wrap=document.createElement('div');
+    wrap.style.cssText='position:relative;';
+
     const s=document.createElement('div');
     s.className='sw';s.style.background=p.hex;s.dataset.id=p.id;s.title=p.hex;
-    s.addEventListener('click',()=>pickColor(p));
+
+    // Delete button (always visible on touch, hover on desktop)
+    const del=document.createElement('button');
+    del.textContent='×';
+    del.style.cssText='position:absolute;top:-4px;right:-4px;width:16px;height:16px;border-radius:50%;background:#ef4444;color:#fff;border:none;font-size:11px;font-weight:700;cursor:pointer;display:none;align-items:center;justify-content:center;z-index:10;line-height:1;padding:0;';
+    del.addEventListener('click',e=>{
+      e.stopPropagation();
+      customColors=customColors.filter(c=>c.hex!==p.hex);
+      lsSet('miyuki_custom_colors',JSON.stringify(customColors));
+      buildCustomGrid();showToast('Color eliminado');
+    });
+
+    // Show delete button on long press (touch) or right click (desktop)
+    let longPressTimer=null;
+    s.addEventListener('touchstart',e=>{
+      longPressTimer=setTimeout(()=>{
+        del.style.display='flex';
+        wrap.style.zIndex='10';
+      },500);
+    },{passive:true});
+    s.addEventListener('touchend',()=>{ clearTimeout(longPressTimer); },{passive:true});
+    s.addEventListener('touchmove',()=>{ clearTimeout(longPressTimer); },{passive:true});
+
+    // Desktop: right click
     s.addEventListener('contextmenu',e=>{
       e.preventDefault();
       customColors=customColors.filter(c=>c.hex!==p.hex);
       lsSet('miyuki_custom_colors',JSON.stringify(customColors));
       buildCustomGrid();showToast('Color eliminado');
     });
-    g.appendChild(s);
+
+    s.addEventListener('click',()=>{ if(del.style.display==='flex'){del.style.display='none';wrap.style.zIndex='';return;} pickColor(p); });
+
+    wrap.appendChild(s);
+    wrap.appendChild(del);
+    g.appendChild(wrap);
   });
+
+  // Tap anywhere else to hide delete buttons
+  setTimeout(()=>{
+    document.addEventListener('click',function hideDelBtns(){
+      g.querySelectorAll('button').forEach(b=>{ b.style.display='none'; b.closest('div[style]').style.zIndex=''; });
+      document.removeEventListener('click',hideDelBtns);
+    });
+  },100);
 }
 
 function buildPalette(){
@@ -2536,7 +2575,7 @@ function saveProject(){
 
     // Method 1: try Blob + data URI (works local & online)
     try {
-      const blob = new Blob([json], {type: 'application/json'});
+      const blob = new Blob([json], {type: 'application/octet-stream'});
       const url  = URL.createObjectURL(blob);
       const a    = document.createElement('a');
       a.href     = url;
@@ -2547,7 +2586,7 @@ function saveProject(){
       setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 2000);
     } catch(e1) {
       // Method 2: data URI fallback (always works locally)
-      const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(json);
+      const dataUri = 'data:application/octet-stream;charset=utf-8,' + encodeURIComponent(json);
       const a = document.createElement('a');
       a.href = dataUri;
       a.download = projFileName + '.mbe';
@@ -4742,6 +4781,94 @@ function updateRotateButtonsState(){
     if(e.touches.length<2){lastPinchDist=null; if(e.touches.length===0)pinching=false;}
     if(!pinching){ if(tool==='sel'){selDragging=false;drawSelOverlay();}else drawing=false; }
   },{passive:false});
+})();
+
+// ── DRAGGABLE FLOATING BUTTONS ───────────────────────────────────────────────
+(function(){
+  function makeDraggable(btn, storageKey){
+    let startX, startY, startLeft, startTop, moved;
+    const SIZE = 40;
+
+    // Load saved position
+    try {
+      const saved = JSON.parse(localStorage.getItem(storageKey));
+      if(saved){
+        btn.style.left   = saved.left   !== undefined ? saved.left   + 'px' : '';
+        btn.style.right  = saved.right  !== undefined ? saved.right  + 'px' : '';
+        btn.style.top    = saved.top    !== undefined ? saved.top    + 'px' : '';
+        btn.style.bottom = saved.bottom !== undefined ? saved.bottom + 'px' : '';
+      }
+    } catch(e){}
+
+    function savePos(){
+      const r = btn.getBoundingClientRect();
+      // Store as left/top always for consistency
+      const pos = {
+        left:   r.left,
+        top:    r.top,
+        right:  undefined,
+        bottom: undefined
+      };
+      try { localStorage.setItem(storageKey, JSON.stringify(pos)); } catch(e){}
+      btn.style.right  = '';
+      btn.style.bottom = '';
+      btn.style.left   = r.left + 'px';
+      btn.style.top    = r.top  + 'px';
+    }
+
+    function onMove(cx, cy){
+      if(!moved && Math.abs(cx-startX)+Math.abs(cy-startY) > 5) moved = true;
+      if(!moved) return;
+      let nx = startLeft + (cx - startX);
+      let ny = startTop  + (cy - startY);
+      // Clamp to screen
+      nx = Math.max(0, Math.min(window.innerWidth  - SIZE, nx));
+      ny = Math.max(0, Math.min(window.innerHeight - SIZE, ny));
+      btn.style.left   = nx + 'px';
+      btn.style.top    = ny + 'px';
+      btn.style.right  = '';
+      btn.style.bottom = '';
+    }
+
+    // Touch
+    btn.addEventListener('touchstart', e => {
+      const t = e.touches[0];
+      startX = t.clientX; startY = t.clientY;
+      const r = btn.getBoundingClientRect();
+      startLeft = r.left; startTop = r.top;
+      moved = false;
+    }, { passive: true });
+
+    btn.addEventListener('touchmove', e => {
+      e.preventDefault();
+      onMove(e.touches[0].clientX, e.touches[0].clientY);
+    }, { passive: false });
+
+    btn.addEventListener('touchend', e => {
+      if(moved){ savePos(); e.preventDefault(); }
+    }, { passive: false });
+
+    // Mouse (desktop)
+    btn.addEventListener('mousedown', e => {
+      startX = e.clientX; startY = e.clientY;
+      const r = btn.getBoundingClientRect();
+      startLeft = r.left; startTop = r.top;
+      moved = false;
+      function onMouseMove(ev){ onMove(ev.clientX, ev.clientY); }
+      function onMouseUp(ev){
+        if(moved){ savePos(); ev.preventDefault(); ev.stopPropagation(); }
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+      }
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    });
+  }
+
+  const btnL = document.getElementById('btn-lp-toggle');
+  const btnR = document.getElementById('btn-rp-toggle');
+  if(btnL) makeDraggable(btnL, 'miyuki_btn_lp_pos');
+  if(btnR) makeDraggable(btnR, 'miyuki_btn_rp_pos');
 })();
 
 // ── TABLET PANEL TOGGLES ──────────────────────────────────────────────────
